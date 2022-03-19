@@ -77,7 +77,7 @@ def iniciar():
 
     btnAntena = tk.Button(comandosRadioFrame, text = "Señal Ant", command = lambda : radioComandos("AT+CSQ", opcion = 3), font = fuenteBtn, width = 10, state = "disabled")
     btnAntena.pack(side = tk.LEFT, padx = btnPadx)
-
+    print(btnAntena.cget("bg"))
 
     btnRadioSalir = tk.Button(radioFrame, text = "Salir de modo radio", command = lambda : salirRadio(), font = fuenteBtn, state = "disabled")
     btnRadioSalir.pack(pady = btnPady)
@@ -403,6 +403,8 @@ def pruebaVoltajes():
         campoEstatus.delete('1.0', 'end')
     except:
         messagebox.showinfo(title="ERROR", message= "Ocurrió un error al tratar de leer los voltajes")
+        campoRespuesta.delete('1.0', 'end')
+        campoEstatus.delete('1.0', 'end')
         resetVoltageInput()
 
 def specialTest(comando, pruebanum):
@@ -443,9 +445,17 @@ def specialTest(comando, pruebanum):
     valorNum = valorRespuesta.split("=")[1]
     if pruebanum == 1:
         HALL_LPF = valorNum
+        if int(valorNum) < 2000 or int(valorNum) > 2100:
+            campoEstatus.insert(tk.INSERT, "(FAIL) El valor está fuera del rango establecido ")
+        else:  
+            campoEstatus.insert(tk.INSERT, "(PASS) Valor dentro del rango aceptable")
 
     if pruebanum == 2:
         IMEAS = valorNum
+        if int(valorNum) < 2000 or int(valorNum) > 2100:
+            campoEstatus.insert(tk.INSERT, "(FAIL) El valor está fuera del rango establecido ")
+        else:  
+            campoEstatus.insert(tk.INSERT, "(PASS) Valor dentro del rango aceptable")
     if pruebanum == 3:
         ESFX = valorNum
         if int(valorNum) < 2000 or int(valorNum) > 2500:
@@ -464,6 +474,10 @@ def specialTest(comando, pruebanum):
     
     if pruebanum == 6:
         temperatura = str(((int(valorNum)-372) - 424) / 6.25)
+        if (((int(valorNum)-372) - 424) / 6.25) > 35 or (((int(valorNum)-372) - 424) / 6.25) < 10:
+            campoEstatus.insert(tk.INSERT, "(FAIL) El valor está fuera del rango establecido")
+        else:  
+            campoEstatus.insert(tk.INSERT, "(PASS) Valor dentro del rango aceptable")
 
         TP = valorNum + " / " + temperatura[0:2] +"°C"
         campoRespuesta.insert(tk.INSERT,"Temperatura: " + temperatura + "°C\n" )
@@ -953,7 +967,7 @@ def activarBotones():
                 for m in l.winfo_children():
                     m["state"] = "normal"
         btnRadio["state"] = "normal"
-        btnTestV["state"] = "normal"
+        
 
     except Exception as e:
         print(e)
@@ -991,6 +1005,9 @@ def desactivarBotonesRadio():
         except: 
             pass
     btnRadioSalir["state"] = "disabled"
+
+def resetBG():
+    pass
 
 def asignarValores():
     campoValores.delete('1.0', 'end')
@@ -1058,6 +1075,7 @@ def seleccionPuerto(event):
             window.update()
             #time.sleep(3)
             btnReboot.configure(state = "normal")
+            btnTestV.configure(state = "normal")
             
             puerto = selPuertoList.get().split(":")[0]
             serialPort = serial.Serial(port = puerto, baudrate=9600, timeout = 5)#, stopbits =  serial.STOPBITS_ONE, bytesize = serial.EIGHTBITS)
