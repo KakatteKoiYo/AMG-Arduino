@@ -1,28 +1,65 @@
-import re
+import re, os
 import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 import serial
 import serial.tools.list_ports
-#HOLHOLA
-#MODIFICADO 22
-# ser = serial.Serial(DEVICE,BAUD,timeout=1)
-# if(ser.isOpen() == False):
-#     ser.open()
+from xml.etree import ElementTree
 
-
-
-
-window = tk.Tk()
-window.title("GUI AGM Terminal test")
-window.geometry("1100x620")
-window.resizable(False, False)
+programa_version = "1.0"
 
 AP = RATIO_SEL = HALL_SEL = LOWER_BURDEN = LO_ZIN_SKY = LO_ZIN_EARTH = EFS_G4 = EFS_G1_2 = IMEI = SIM = CSQ = "?" 
 RAM = FLASH = HALL1 = HALL2 = HALL_LPF = IMEAS = ESFX = VCAP = CapCharge = TP ="?"
 puerto = "?"
 
+mensajeInicio = """Antes de presionar "Reboot" para comenzar:
+-Asegúrese de que el puerto seleccionado es el correcto.
+-Que el Arduino esté conectado a la unidad y ésta tenga firmware de debug.
+-Que la fuente esté encendia.
+-Si va a leer voltaje, AP debe estar activo para leer señales +5V y -5V.
+Y muy importante: conecte correctamente el cable al conector J8 
+Si está mal conectado en J8 el Arduino podría dañarse.
+"""
+
 tiempoEnvio = 0.005
+
+
+window = tk.Tk()
+window.title("Arduino AGM GUI Tester V1.0")
+window.geometry("1100x620")
+window.resizable(False, False)
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+def buscarActualizacion():
+    try:
+        ruta = "//Mxgdld0nsifsn03/gdl_te_vol_1/TE_Customers/Aclara/Aclara_RF/Aplicaciones de Pruebas/updateverify.xml"
+        carpeta = "//Mxgdld0nsifsn03/gdl_te_vol_1/TE_Customers/Aclara/Aclara_RF/Aplicaciones de Pruebas"
+        xmlupdate = ElementTree.parse(ruta)
+        version = xmlupdate.getroot()[3][0].text.strip()
+        nombreapp = xmlupdate.getroot()[3][1].text.strip()
+        print(nombreapp)
+
+        if  version != programa_version:
+            
+            mensaje_pregunta = messagebox.askokcancel("Actualización disponible",
+            """Hay una actualización disponible en:
+            """+carpeta+"""\nPuede copiar la nueva versión (V"""+version+ """) y borrar esta (V"""+programa_version+""") ¿Abrir carpeta?\n Dudas: Daniel_Romo@jabil.com""")
+            if mensaje_pregunta == True:
+                try:
+                    carpeta = os.path.realpath(carpeta)
+                    os.startfile(carpeta)
+                except:
+                    messagebox.showinfo(title="ERROR", message="Hubo un error al tratar de abrir la carpeta. Intente abrirla manualmente")
+            
+    except Exception as e:
+        print(e)
 
 def iniciar():
     global campoEstatus, campoRespuesta, comandosSimplesFrame, comandosRadioFrame, btnRadioSalir, pruebasFrame, pinesFrame, campoValores, btnRadio
@@ -206,11 +243,7 @@ def iniciar():
     campoEstatus.pack()
     campoRespuesta = tk.Text(respuestaFrame, width = 67, height = 7, font = ("Arial", 15))
     campoRespuesta.pack()
-    campoRespuesta.insert(tk.INSERT, """Antes de presionar "Reboot" para comenzar:
--Asegúrese de que la unidad esté conectada a la computadora.
--Que el puerto seleccionado es el correcto. 
--Que la fuente esté encendia.
--Y que la unidad tenga el firmware de debug.""")
+    campoRespuesta.insert(tk.INSERT, mensajeInicio)
 
 
     campoValores = tk.Text(window, width = 24, height = 28, font = ("Arial", 10))
@@ -287,7 +320,6 @@ def iniciar():
 
     desactivarBotones()
     
-
 def resetVoltageInput():
     for i in voltajesFrame.winfo_children():
         try:
@@ -309,15 +341,17 @@ def pruebaVoltajes():
         resetVoltageInput()
         serialPort.timeout = 2
         serialPort.flushInput()
+
+
         serialPort.write("voltajes".encode())
         respuesta = serialPort.readline()
         print(respuesta)
         respuestaArray = respuesta.decode().split("/")
 
         
-        valorInt = 0.0046 * int(respuestaArray[0])
-        valorStr = str(valorInt)
-        if valorInt < 4.2:
+        valorFloat = 0.0047 * int(respuestaArray[0])
+        valorStr = str(valorFloat)[:6]
+        if valorFloat < 4.2:
             voltajesFrame.winfo_children()[2].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[2].config(bg = "green")
@@ -328,9 +362,9 @@ def pruebaVoltajes():
         
 
         
-        valorInt = (0.0046 * int(respuestaArray[1])) - 0.02
-        valorStr = str(valorInt)
-        if valorInt < 3.2:
+        valorFloat = (0.0047 * int(respuestaArray[1])) - 0.08
+        valorStr = str(valorFloat)[:6]
+        if valorFloat < 3.2:
             voltajesFrame.winfo_children()[5].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[5].config(bg = "green")
@@ -340,9 +374,9 @@ def pruebaVoltajes():
         
 
         
-        valorInt = (0.0046 * int(respuestaArray[2])) - 0.02
-        valorStr = str(valorInt)
-        if valorInt < 3.2:
+        valorFloat = (0.0047 * int(respuestaArray[2])) - 0.08
+        valorStr = str(valorFloat)[:6]
+        if valorFloat < 3.2:
             voltajesFrame.winfo_children()[8].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[8].config(bg = "green")
@@ -352,9 +386,9 @@ def pruebaVoltajes():
         
 
         
-        valorInt = (0.0046 * int(respuestaArray[3])) - 0.02
-        valorStr = str(valorInt)
-        if valorInt < 3.2:
+        valorFloat = (0.0047 * int(respuestaArray[3])) - 0.08
+        valorStr = str(valorFloat)[:6]
+        if valorFloat < 3.2:
             voltajesFrame.winfo_children()[11].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[11].config(bg = "green")
@@ -364,9 +398,9 @@ def pruebaVoltajes():
         
 
         
-        valorInt = 0.0046 * int(respuestaArray[4])
-        valorStr = str(valorInt)
-        if valorInt < 1.2:
+        valorFloat = 0.0047 * int(respuestaArray[4]) - 0.03
+        valorStr = str(valorFloat)[:6]
+        if valorFloat < 1.2:
             voltajesFrame.winfo_children()[14].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[14].config(bg = "green")
@@ -376,9 +410,9 @@ def pruebaVoltajes():
         
 
         
-        valorInt = 0.0046 * int(respuestaArray[5])
-        valorStr = str(valorInt)
-        if valorInt < 4.2:
+        valorFloat = 0.0047 * int(respuestaArray[5])
+        valorStr = str(valorFloat)[:6]
+        if valorFloat < 4.2:
             voltajesFrame.winfo_children()[17].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[17].config(bg = "green")
@@ -389,9 +423,9 @@ def pruebaVoltajes():
 
 
         
-        valorInt = ((0.0046 * int(respuestaArray[6])) * 2) - 4.899
-        valorStr = str(valorInt)
-        if valorInt > -4.2:
+        valorFloat = ((0.0047 * int(respuestaArray[6])) * 2) - 4.899
+        valorStr = str(valorFloat)[:6]
+        if valorFloat > -4.2:
             voltajesFrame.winfo_children()[20].config(bg = "red")
         else:
             voltajesFrame.winfo_children()[20].config(bg = "green")
@@ -648,7 +682,7 @@ def cambiarEstadoNodo(comando, nodo, nombre, needAP = 0):
     #respuesta = respuestaStringArray[respuestaPos]
     
 def reiniciarFPGA():
-    serialPort.timeout = 1
+    serialPort.timeout = 3
 
     campoRespuesta.delete('1.0', 'end')
     campoEstatus.delete('1.0', 'end')
@@ -806,7 +840,7 @@ def radioIniciar():
             serialPort.read_until(expected="mvm>".encode())
 
     respuestaBytes = serialPort.read_until("link...\r\n".encode())
-    respuesta = respuestaBytes.decode()
+    respuesta = respuestaBytes.decode('unicode_escape')
     print(respuesta)
     campoEstatus.delete('1.0', 'end')
 
@@ -853,7 +887,7 @@ def radioComandos(comando, opcion):
 
     respuestaBytes = serialPort.read_until(expected="OK".encode())
  
-    respuesta = respuestaBytes.decode()
+    respuesta = respuestaBytes.decode('unicode_escape')
 
     campoEstatus.delete('1.0', 'end')
     # print(respuesta)
@@ -1040,7 +1074,6 @@ def asignarValores():
                                    )
     window.update()
     
-
 def listaPuertos():
 
     try: 
@@ -1096,5 +1129,8 @@ def mensajeError():
 iniciar()
 asignarValores()
 listaPuertos()
+buscarActualizacion()
+
+window.iconbitmap(resource_path("agmicon.ico"))
 
 window.mainloop()
